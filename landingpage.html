@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netflix Clone</title>
+    <style>
+        :root {
+            --netflix-red: #E50914;
+            --netflix-black: #141414;
+            --netflix-dark-gray: #222222;
+            --netflix-light-gray: #757575;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--netflix-black);
+            color: white;
+        }
+
+        /* Header & Navigation */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            transition: background-color 0.3s ease;
+        }
+
+        .header-scrolled {
+            background-color: var(--netflix-black);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            width: 150px;
+            cursor: pointer;
+            color: var(--netflix-red);
+            font-size: 2rem;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+        }
+
+        .nav-links li {
+            margin-left: 20px;
+        }
+
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: #bbb;
+        }
+
+        .right-nav {
+            display: flex;
+            align-items: center;
+        }
+
+        .search-icon,
+        .notifications,
+        .profile {
+            margin-left: 22px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 80vh;
+            width: 100%;
+            position: relative;
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+                url('https://assets.nflxext.com/ffe/siteui/vlv3/a795ee10-8c6d-467c-8159-254be2b69013/d33a8c2c-28d9-4ae9-aa75-5ad31e469390/US-en-20220912-popsignuptwoweeks-perspective_alpha_website_small.jpg');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .hero h2 {
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin-bottom: 30px;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+
+        .email-form {
+            display: flex;
+            justify-content: center;
+            height: 60px;
+            margin-top: 20px;
+        }
+
+        .email-input {
+            width: 450px;
+            height: 100%;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border: none;
+        }
+
+        .get-started-btn {
+            background-color: var(--netflix-red);
+            color: white;
+            border: none;
+            padding: 0 30px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .get-started-btn:hover {
+            background-color: #f40612;
+        }
+
+        /* Content Rows */
+        .content-section {
+            padding: 50px;
+        }
+
+        .category-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .movie-row {
+            display: flex;
+            overflow-x: auto;
+            padding: 20px 0;
+            scroll-behavior: smooth;
+        }
+
+        /* Hide scrollbar */
+        .movie-row::-webkit-scrollbar {
+            display: none;
+        }
+
+        .movie-card {
+            min-width: 200px;
+            height: 300px;
+            margin-right: 10px;
+            position: relative;
+            transition: transform 0.3s;
+            cursor: pointer;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .movie-card:hover {
+            transform: scale(1.08);
+            z-index: 10;
+        }
+
+        .movie-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .movie-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+            padding: 10px;
+            transform: translateY(100%);
+            transition: transform 0.3s;
+        }
+
+        .movie-card:hover .movie-info {
+            transform: translateY(0);
+        }
+
+        .movie-title {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .movie-description {
+            font-size: 0.8rem;
+            color: #bbb;
+        }
+
+        /* Footer */
+        footer {
+            padding: 50px;
+            color: var(--netflix-light-gray);
+            background-color: var(--netflix-black);
+            margin-top: 50px;
+        }
+
+        .footer-links {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .footer-links a {
+            color: var(--netflix-light-gray);
+            text-decoration: none;
+            font-size: 0.8rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        .copyright {
+            font-size: 0.8rem;
+            margin-top: 20px;
+        }
+
+        .test {
+            width: 25%;
+            padding: 10px;
+        }
+
+        .content {
+            display: none;
+            width: 70%;
+        }
+
+        #c1 {
+            opacity: 0;
+            transition: opacity 1s ease;
+            display: none;
+        }
+
+        #c1.show {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Media Queries */
+        @media (max-width: 768px) {
+            header {
+                padding: 15px 20px;
+            }
+
+            .nav-links li {
+                margin-left: 10px;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero h2 {
+                font-size: 1.2rem;
+            }
+
+            .email-form {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .email-input {
+                width: 100%;
+                margin-bottom: 15px;
+            }
+
+            .content-section {
+                padding: 30px 20px;
+            }
+
+            .footer-links {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header id="header">
+        <a href="#" class="logo">Humanitarian Logistics</a>
+        <ul class="nav-links">
+            <li><a href="#">Giới thiệu vấn đề</a></li>
+            <li><a href="#">Ý tưởng giải quyết</a></li>
+            <li><a href="#">Movies</a></li>
+            <li><a href="#">New & Popular</a></li>
+            <li><a href="#">My List</a></li>
+        </ul>
+        <div class="right-nav">
+            <div class="search-icon">🔍</div>
+            <div class="notifications">🔔</div>
+            <div class="profile">👤</div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+
+            <div class="hero-content">
+                <h1>HumaNexus</h1>
+                <h2>LOGISTICS NHÂN ĐẠO</h2>
+                <p>Kết nối nhân đạo Kiến tạo tương lai</p>
+
+            </div>
+        </section>
+
+        <section class="content-section">
+            <h3 class="category-title">Bài toán Logistics trong bối cảnh cứu trợ nhân đạo</h3>
+            <div class="movie-row" id="popular">
+                <div class="test">
+                    <h3 id="click">Hạ tầng bị hư hại</h3>
+                    <p class="content" id="c1">Nhiều tuyến đường bị chia cắt, khó tiếp cận các khu vực bị ảnh hưởng
+                        nặng.
+                    </p>
+                </div>
+                <div class="test">
+                    <h3>Thiếu thông tin cập nhật</h3>
+                    <p>Khó nắm bắt nhu cầu thực tế tại từng điểm cứu trợ.
+                    </p>
+
+                </div>
+                <div class="test">
+                    <h3>Phối hợp rời rạc</h3>
+                    <p>giữa chính phủ, nhà tài trợ và lực lượng cứu trợ địa phương</p>
+                </div>
+                <div class="test">
+                    <h3>Lãng phí nguồn lực</h3>
+                    <p>Hàng hóa bị trùng lặp, không đến đúng nơi cần, không đến kịp thời.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="content-section">
+            <h3 class="category-title">Trending Now</h3>
+            <div class="movie-row" id="trending">
+                <!-- Movie cards will be added by JavaScript -->
+            </div>
+        </section>
+
+        <section class="content-section">
+            <h3 class="category-title">Netflix Originals</h3>
+            <div class="movie-row" id="originals">
+                <!-- Movie cards will be added by JavaScript -->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Questions? Contact us.</p>
+        <div class="footer-links">
+            <a href="#">FAQ</a>
+            <a href="#">Help Center</a>
+            <a href="#">Account</a>
+            <a href="#">Media Center</a>
+            <a href="#">Investor Relations</a>
+            <a href="#">Jobs</a>
+            <a href="#">Ways to Watch</a>
+            <a href="#">Terms of Use</a>
+            <a href="#">Privacy</a>
+            <a href="#">Cookie Preferences</a>
+            <a href="#">Corporate Information</a>
+            <a href="#">Contact Us</a>
+            <a href="#">Speed Test</a>
+            <a href="#">Legal Notices</a>
+            <a href="#">Only on Netflix</a>
+        </div>
+        <p class="copyright">Netflix Clone &copy; 2025</p>
+    </footer>
+
+    <script>
+        // Sample movie data
+        // const movies = [
+        //     { id: 1, title: "Stranger Things", description: "Mystery • Thriller", image: "https://th.bing.com/th/id/OIP.930MxLcSLzKzw-8cdKa7hwHaJ4?rs=1&pid=ImgDetMain" },
+        //     { id: 2, title: "The Crown", description: "Drama • Historical", image: "https://i.pinimg.com/originals/fb/5b/be/fb5bbed97ff578b6d96815283fce95e8.jpg" },
+        //     { id: 3, title: "Money Heist", description: "Crime • Drama", image: "https://th.bing.com/th/id/OIP.JQtA9kej7hn6r8R0ArYQ0gHaJ4?w=1080&h=1440&rs=1&pid=ImgDetMain" },
+        //     { id: 4, title: "Squid Game", description: "Thriller • Survival", image: "https://th.bing.com/th/id/OIP.R9BM5xtLo4BsL5pzNqf4MwHaLg?w=1125&h=1747&rs=1&pid=ImgDetMain" },
+        //     { id: 5, title: "Dark", description: "Sci-Fi • Thriller", image: "https://scontent.fhan3-2.fna.fbcdn.net/v/t1.15752-9/487173750_1178689947045325_3461004971702616364_n.png?_nc_cat=107&ccb=1-7&_nc_sid=0024fc&_nc_eui2=AeGu-SBVYSoqAdfH-7EVjOKCAmUFObxJxloCZQU5vEnGWghdHh9Xh4IBclAg2aXf6uKLZjyxOkBqRXH92doGqOeV&_nc_ohc=iqrve2Q8fxIQ7kNvwEmV-g_&_nc_oc=AdmocNYU5GyujtmJZUlys7ArSlvovW9IRc_HlMAS-M4zubBFKpd40CBZHZOYBafJmYc&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fhan3-2.fna&oh=03_Q7cD2AHw19TTTsTmyllgEQVXzs9bU7KCZqqjIsuoT5OClel9Jw&oe=68245D97" },
+        //     { id: 6, title: "The Witcher", description: "Fantasy • Action", image: "https://via.placeholder.com/200x300/E50914/FFFFFF?text=The+Witcher" },
+        //     { id: 7, title: "Queen's Gambit", description: "Drama • Chess", image: "https://via.placeholder.com/200x300/E50914/FFFFFF?text=Queen's+Gambit" },
+        //     { id: 8, title: "Ozark", description: "Crime • Drama", image: "https://via.placeholder.com/200x300/E50914/FFFFFF?text=Ozark" },
+        //     { id: 9, title: "Black Mirror", description: "Sci-Fi • Anthology", image: "https://via.placeholder.com/200x300/E50914/FFFFFF?text=Black+Mirror" },
+        //     { id: 10, title: "Breaking Bad", description: "Crime • Drama", image: "https://via.placeholder.com/200x300/E50914/FFFFFF?text=Breaking+Bad" }
+        // ];
+
+        // // Function to create movie card
+        // function createMovieCard(movie) {
+        //     return `
+        //         <div class="movie-card">
+        //             <img src="${movie.image}" alt="${movie.title}">
+        //             <div class="movie-info">
+        //                 <h4 class="movie-title">${movie.title}</h4>
+        //                 <p class="movie-description">${movie.description}</p>
+        //             </div>
+        //         </div>
+        //     `;
+        // }
+
+        // Populate movie rows
+        document.addEventListener('DOMContentLoaded', () => {
+            const popularRow = document.getElementById('popular');
+            const trendingRow = document.getElementById('trending');
+            const originalsRow = document.getElementById('originals');
+
+            // Shuffle and slice arrays for different sections
+            const shuffledMovies = [...movies].sort(() => 0.5 - Math.random());
+
+            popularRow.innerHTML = movies.slice(0, 6).map(createMovieCard).join('');
+            trendingRow.innerHTML = shuffledMovies.slice(0, 6).map(createMovieCard).join('');
+            originalsRow.innerHTML = shuffledMovies.slice(6).map(createMovieCard).join('');
+
+            // Header scroll effect
+            const header = document.getElementById('header');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    header.classList.add('header-scrolled');
+                } else {
+                    header.classList.remove('header-scrolled');
+                }
+            });
+        });
+
+        const content = document.getElementById('c1');
+        document.getElementById("click").addEventListener('click', () => {
+            setTimeout(() => {
+                content.style.display = 'block';
+                // Delay adding the 'show' class slightly to trigger transition
+                requestAnimationFrame(() => {
+                    content.classList.add('show');
+                });
+            }, 500);
+        })
+    </script>
+</body>
+
+</html>
