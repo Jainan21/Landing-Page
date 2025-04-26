@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel File Uploader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        #file-section,
+        #preview-section,
+        #database-section,
+        #result-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        #status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>HỆ THỐNG TÍNH TOÁN THỰC PHẨM TRÊN ĐẦU NGƯỜI</h1>
+
+    <div id="file-section">
+        <h2>Bước 1: Nhập file excel về thông tin người cần trợ giúp</h2>
+        <p>Thông tin bao gồm: Tên, tuổi, giới tính</p>
+        <input type="file" id="excel-file" accept=".xlsx, .xls">
+        <button id="upload-btn" class="btn">Nhập file</button>
+    </div>
+
+    <div id="preview-section">
+        <h2>Bước 2: Xem lại dữ liệu vừa nhập</h2>
+        <div id="excel-data-preview"></div>
+    </div>
+
+    <div id="database-section">
+        <h2>Bước 3: Xử lý dữ liệu nền</h2>
+        <button id="fetch-data-btn" class="btn" disabled>Xử lý</button>
+        <div id="status"></div>
+    </div>
+    <div id="result-section">
+        <h2>Bước 4: Xem số lượng người cần hỗ trợ</h2>
+        <button id="after-fetching" class="btn">Hiện dữ liệu</button>
+        <div id="result"></div>
+    </div>
+    <div id="result-section">
+        <h2>Bước 5: Tính toán lượng hàng hóa cần thiết</h2>
+        <button id="cargo" class="btn">Hiện dữ liệu</button>
+        <div id="cargotable"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        // Global variable to store the parsed Excel data
+        let excelData = null;
+
+        // DOM Elements
+        const excelFileInput = document.getElementById('excel-file');
+        const uploadBtn = document.getElementById('upload-btn');
+        const excelDataPreview = document.getElementById('excel-data-preview');
+        const fetchDataBtn = document.getElementById('fetch-data-btn');
+        const statusDiv = document.getElementById('status');
+
+        const cargoBtn = document.getElementById('cargo');
+        const cargoTable = document.getElementById('cargotable');
+
+        const groupVictims = [];
+        let data = [];
+
+
+        const reliefItems = [
+            {
+                type: "children",
+                items: [
+                    { name: "Sữa bột", amount: 1.5, unit: "hộp (400-500g)", description: "1-2 hộp sữa bột hoặc 3-5 hộp sữa tươi (180ml)" },
+                    { name: "Bánh/kẹo/lương khô", amount: 400, unit: "gram", description: "300-500g" },
+                    { name: "Thuốc cơ bản", amount: 1, unit: "bộ", description: "thuốc hạ sốt, thuốc bôi ngoài da" },
+                    { name: "Quần áo + chăn", amount: 1, unit: "bộ", description: "1 bộ quần áo + 1 chăn mỏng" },
+                    { name: "Đồ vệ sinh cá nhân", amount: 1, unit: "bộ nhỏ", description: "khăn ướt, xà phòng" }
+                ]
+            },
+            {
+                type: "male",
+                items: [
+                    { name: "Mì/lương khô/thực phẩm hộp", amount: 7, unit: "gói/hộp", description: "5-7 gói mì hoặc 1-2 kg lương khô + 3 hộp đồ hộp" },
+                    { name: "Nước uống", amount: 7.5, unit: "lít", description: "1.5-3 lít/ngày x 2-3 ngày" },
+                    { name: "Quần áo + chăn", amount: 1, unit: "bộ", description: "1 bộ quần áo + 1 chăn mỏng" },
+                    { name: "Thuốc cơ bản", amount: 1, unit: "bộ", description: "thuốc cảm, hạ sốt, băng cá nhân" },
+                    { name: "Đồ vệ sinh cá nhân", amount: 1, unit: "bộ nhỏ", description: "xà phòng, kem đánh răng" }
+                ]
+            },
+            {
+                type: "female",
+                items: [
+                    { name: "Mì/lương khô/thực phẩm hộp", amount: 7, unit: "gói/hộp", description: "5-7 gói mì hoặc 1-2 kg lương khô + 3 hộp đồ hộp" },
+                    { name: "Nước uống", amount: 7.5, unit: "lít", description: "1.5-3 lít/ngày x 2-3 ngày" },
+                    { name: "Quần áo + chăn", amount: 1, unit: "bộ", description: "1 bộ quần áo + 1 chăn mỏng" },
+                    { name: "Thuốc cơ bản", amount: 1, unit: "bộ", description: "thuốc cảm, hạ sốt, băng cá nhân" },
+                    { name: "Đồ vệ sinh cá nhân", amount: 1, unit: "bộ nhỏ", description: "xà phòng, kem đánh răng" }
+                ]
+            },
+            {
+                type: "elderly",
+                items: [
+                    { name: "Thực phẩm dễ tiêu", amount: 1.5, unit: "phần", description: "1-2 gói cháo ăn liền hoặc sữa + bánh quy" },
+                    { name: "Quần áo ấm + chăn", amount: 1, unit: "bộ", description: "1 bộ quần áo ấm + 1 chăn dày" },
+                    { name: "Thuốc cá nhân", amount: 1, unit: "bộ", description: "theo toa hoặc thuốc bổ" },
+                    { name: "Đồ vệ sinh cá nhân", amount: 1, unit: "bộ nhỏ", description: "phù hợp với người cao tuổi" }
+                ]
+            }
+        ];
+
+
+
+        const result = document.getElementById('result');
+        const btnResult = document.getElementById('after-fetching');
+
+        // Event Listeners
+        uploadBtn.addEventListener('click', handleFileUpload);
+        fetchDataBtn.addEventListener('click', pushToDatabase);
+        btnResult.addEventListener('click', createQuantityTable);
+        cargoBtn.addEventListener('click', createTable)
+
+        // Handle file upload and display preview
+        function handleFileUpload() {
+            const file = excelFileInput.files[0];
+
+            if (!file) {
+                showStatus('Please select an Excel file first.', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+
+                    // Get the first worksheet
+                    const worksheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[worksheetName];
+
+                    // Convert to JSON
+                    excelData = XLSX.utils.sheet_to_json(worksheet);
+
+                    // Display preview
+                    displayDataPreview(excelData);
+
+                    // Enable fetch data button
+                    fetchDataBtn.disabled = false;
+
+                    showStatus('File uploaded successfully! You can now preview the data.', 'success');
+                } catch (error) {
+                    console.error('Error processing Excel file:', error);
+                    showStatus('Error processing Excel file. Please check if it\'s a valid Excel file.', 'error');
+                }
+            };
+
+            reader.onerror = function () {
+                showStatus('Error reading the file. Please try again.', 'error');
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Display data preview in a table
+        function displayDataPreview(data) {
+            if (!data || data.length === 0) {
+                excelDataPreview.innerHTML = '<p>No data to display</p>';
+                return;
+            }
+
+            // Create table
+            const table = document.createElement('table');
+
+            // Create header row
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+
+            // Get headers from first data object
+            const headers = Object.keys(data[1]);
+
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // Create table body with data rows
+            const tbody = document.createElement('tbody');
+
+            // Limit preview to first 10 rows to avoid performance issues
+            const displayData = data.slice(0, 10);
+
+            displayData.forEach(row => {
+                const tr = document.createElement('tr');
+
+                headers.forEach(header => {
+                    const td = document.createElement('td');
+                    td.textContent = row[header] !== undefined ? row[header] : '';
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(tbody);
+
+            // Clear previous content and append table
+            excelDataPreview.innerHTML = '';
+            excelDataPreview.appendChild(table);
+
+            // Show message if there are more rows
+            if (data.length > 10) {
+                const message = document.createElement('p');
+                message.textContent = `Showing 10 out of ${data.length} rows.`;
+                excelDataPreview.appendChild(message);
+            }
+        }
+
+        function checkGroup(people) {
+            let children = [];
+            let male = [];
+            let female = [];
+            let elderly = []
+
+            people.forEach(person => {
+                const { Age, Sex } = person;
+                if (Age < 14) {
+                    children.push(person)
+                } else if (Age > 60) {
+                    elderly.push(person)
+                } else {
+                    if (Sex == 'Nữ') {
+                        female.push(person)
+                    } else {
+                        male.push(person)
+                    }
+                }
+            });
+
+            return {
+                children,
+                male,
+                female,
+                elderly
+            };
+        }
+
+        // Push data to database
+        function pushToDatabase() {
+            if (!excelData || excelData.length === 0) {
+                showStatus('No data to push to the database.', 'error');
+                return;
+            }
+
+            // Disable the button to prevent multiple clicks
+            fetchDataBtn.disabled = true;
+            showStatus('Processing...', '');
+
+
+            setTimeout(() => {
+
+                showStatus(`Successfully imported ${excelData.length} records to the database!`, 'success');
+                console.log("data checkgroup ", checkGroup(excelData));
+                data = checkGroup(excelData);
+
+            }, 1500);
+        }
+        const table = document.createElement('table');
+
+        function createQuantityTable() {
+            const groups = data;
+            table.border = '1';
+            table.style.marginTop = '20px';
+            table.style.borderCollapse = 'collapse';
+
+            const tbody = document.createElement('tbody');
+
+            const headerRow = document.createElement('tr');
+            ['Loại hàng', 'Trẻ em', 'Nam thanh niên', 'Nữ thanh niên', 'Người già', 'Mô tả'].forEach(text => {
+                const th = document.createElement('th');
+                th.textContent = text;
+                headerRow.appendChild(th);
+            });
+            tbody.appendChild(headerRow);
+
+            const quantityRow = document.createElement('tr');
+            const labelCell = document.createElement('td');
+            labelCell.textContent = 'Số lượng người';
+            quantityRow.appendChild(labelCell);
+
+            ['children', 'male', 'female', 'elderly'].forEach(key => {
+                const cell = document.createElement('td');
+                cell.textContent = groups[key]?.length || 0;
+                groupVictims.push({ key: key, value: groups[key]?.length })
+                quantityRow.appendChild(cell);
+            });
+            console.log('victims: ', groupVictims);
+            quantityRow.appendChild(document.createElement('td'));
+            tbody.appendChild(quantityRow);
+
+            table.appendChild(tbody);
+            document.getElementById('result').appendChild(table);
+        }
+
+        function createTable() {
+            groupVictims.forEach(victim => {
+                //create title
+                const title = document.createElement('p');
+                if(victim.key == "children"){
+                    title.textContent = "Trẻ em";
+                }else if(victim.key == "male"){
+                    title.textContent = "Nam thanh niên/ Đàn ông";
+                }else if(victim.key == "female"){
+                    title.textContent = "Nữ thanh niên/ Phụ nữ";
+                }else{
+                    title.textContent = "Người già";
+                }
+                
+                console.log(victim.key);
+                cargoTable.appendChild(title);
+
+                //create table
+
+                const table = document.createElement('table');
+                table.border = '1';
+                const header = document.createElement('tr');
+                ['Tên mặt hàng', 'Số lượng / người', 'Tổng', 'Đơn vị tính'].forEach(h => {
+                    const th = document.createElement('th');
+                    th.textContent = h;
+                    header.appendChild(th);
+                });
+                table.appendChild(header);
+
+                // Lọc các item theo group
+                const itemGroup = reliefItems.find(item => item.type === victim.key);
+
+                if (itemGroup && Array.isArray(itemGroup.items)) {
+                    itemGroup.items.forEach(item => {
+                        const row = document.createElement('tr');
+
+                        const nameCell = document.createElement('td');
+                        nameCell.textContent = item.name;
+
+                        const perPersonCell = document.createElement('td');
+                        perPersonCell.textContent = item.amount;
+
+                        const unitCargo = document.createElement('td');
+                        unitCargo.textContent = item.unit;
+
+                        const totalCell = document.createElement('td');
+                        totalCell.textContent = item.amount * victim.value;
+
+                        row.appendChild(nameCell);
+                        row.appendChild(perPersonCell);
+                        row.appendChild(totalCell);
+                        row.appendChild(unitCargo);
+
+
+                        table.appendChild(row);
+                    });
+                } else {
+                    const emptyRow = document.createElement('tr');
+                    const emptyCell = document.createElement('td');
+                    emptyCell.colSpan = 3;
+                    emptyCell.textContent = 'Không có dữ liệu hàng hóa.';
+                    emptyRow.appendChild(emptyCell);
+                    table.appendChild(emptyRow);
+                }
+
+                cargoTable.appendChild(table);
+
+            })
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = type;
+        }
+    </script>
+</body>
+
+</html>

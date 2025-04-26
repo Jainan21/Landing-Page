@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', () => {
     const popularRow = document.getElementById('popular');
     const trendingRow = document.getElementById('trending');
